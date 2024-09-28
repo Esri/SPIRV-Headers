@@ -3,8 +3,8 @@ from conans import ConanFile
 class SPIRVHeadersConan(ConanFile):
     name = "SPIRV-Headers"
     version = "0.0.1"
-    url = "https://github.com/duncanthomson/SPIRV-Headers"
-    license = "https://github.com/duncanthomson/SPIRV-Headers/blob/main/LICENSE"
+    url = "https://github.com/Esri/SPIRV-Headers/blob/runtimecore"
+    license = "https://github.com/Esri/SPIRV-Headers/blob/runtimecore/LICENSE"
     description = "Machine-readable files for the SPIR-V Registry"
 
     # RTC specific triple
