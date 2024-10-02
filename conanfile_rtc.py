@@ -1,5 +1,6 @@
 from conans import ConanFile
 
+
 class SPIRVHeadersConan(ConanFile):
     name = "SPIRV-Headers"
     version = "0.0.1"
@@ -7,8 +8,8 @@ class SPIRVHeadersConan(ConanFile):
     license = "https://github.com/Esri/SPIRV-Headers/blob/runtimecore/LICENSE"
     description = "Machine-readable files for the SPIR-V Registry"
 
-    # RTC specific triple
-    settings = "platform_architecture_target"
+    # Use the OS default to get the right line endings
+    settings = "os"
 
     def package(self):
         base = self.source_folder
