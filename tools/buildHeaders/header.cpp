@@ -119,9 +119,9 @@ namespace {
                                     enumStyle_t, bool isLast = false) const {
             return "";
         }
-        virtual std::string maxEnumFmt(const std::string&, const valpair_t&,
-                                       enumStyle_t) const {
-            return "";
+        virtual std::string maxEnumFmt(const std::string& s, const valpair_t& v,
+                               enumStyle_t style) const {
+            return enumFmt(s, v, style, true);
         }
 
         virtual std::string fmtConstInt(unsigned val, const std::string& name,
@@ -183,7 +183,7 @@ all copies or substantial portions of the Materials.
 
 MODIFICATIONS TO THIS FILE MAY MEAN IT NO LONGER ACCURATELY REFLECTS KHRONOS
 STANDARDS. THE UNMODIFIED, NORMATIVE VERSIONS OF KHRONOS SPECIFICATIONS AND
-HEADER INFORMATION ARE LOCATED AT https://www.khronos.org/registry/ 
+HEADER INFORMATION ARE LOCATED AT https://www.khronos.org/registry/
 
 THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -243,6 +243,10 @@ IN THE MATERIALS.
             for (auto& enumRow : enumSet) {
                 std::string name = enumRow.name;
                 enums[e - spv::OperandSource]["Values"][name] = enumRow.value;
+                // Add aliases
+                for (auto& alias : enumRow.aliases) {
+                    enums[e - spv::OperandSource]["Values"][alias] = enumRow.value;
+                }
             }
 
             enums[e - spv::OperandSource]["Type"] = mask ? "Bit" : "Value";
@@ -255,6 +259,10 @@ IN THE MATERIALS.
             for (auto& enumRow : spv::InstructionDesc) {
                 std::string name = enumRow.name;
                 entry["Values"][name] = enumRow.value;
+                // Add aliases
+                for (auto& alias : enumRow.aliases) {
+                    entry["Values"][alias] = enumRow.value;
+                }
             }
             entry["Type"] = "Value";
             entry["Name"] = "Op";
@@ -464,6 +472,10 @@ IN THE MATERIALS.
             return indent(5) + '"' + prependIfDigit(s, v.second) + "\": " + fmtNum("%d", v.first) +
                 (isLast ? "\n" : ",\n");
         }
+        std::string maxEnumFmt(const std::string& s, const valpair_t& v,
+                               enumStyle_t style) const override {
+            return "";
+        }
     };
 
     // base for C and C++
@@ -501,9 +513,9 @@ IN THE MATERIALS.
         virtual std::string pre() const { return ""; } // C name prefix
         virtual std::string headerGuardSuffix() const = 0;
 
-        virtual std::string fmtEnumUse(const std::string& opPrefix, const std::string& name) const { return pre() + name; }
+        virtual std::string fmtEnumUse(const std::string &opPrefix, const std::string &opEnum, const std::string &name) const { return pre() + opPrefix + name; }
 
-        virtual void printUtility(std::ostream& out) const override
+        void printUtility(std::ostream& out) const override
         {
             out << "#ifdef SPV_ENABLE_UTILITY_CODE" << std::endl;
             out << "#ifndef __cplusplus" << std::endl;
@@ -543,7 +555,7 @@ IN THE MATERIALS.
                     seenValues.insert(inst.value);
 
                     std::string name = inst.name;
-                    out << "    case " << fmtEnumUse("Op", name) << ": *hasResult = " << (inst.hasResult() ? "true" : "false") << "; *hasResultType = " << (inst.hasType() ? "true" : "false") << "; break;" << std::endl;
+                    out << "    case " << fmtEnumUse("", "Op", name) << ": *hasResult = " << (inst.hasResult() ? "true" : "false") << "; *hasResultType = " << (inst.hasType() ? "true" : "false") << "; break;" << std::endl;
                 }
 
                 out << "    }" << std::endl;
@@ -576,11 +588,13 @@ IN THE MATERIALS.
                     }
                     seenValues.insert(v.first);
 
-                    std::string label{name + v.second};
+                    out << "    " << "case ";
                     if (name == "Op") {
-                        label = v.second;
+                        out << fmtEnumUse("", name, v.second);
                     }
-                    out << "    " << "case " << pre() << label << ": return " << "\"" << v.second << "\";" << std::endl;
+                    else
+                        out << fmtEnumUse(name, name, v.second);
+                    out << ": return " << "\"" << v.second << "\";" << std::endl;
                 }
                 out << "    default: return \"Unknown\";" << std::endl;
                 out << "    }" << std::endl;
@@ -607,11 +621,6 @@ IN THE MATERIALS.
         std::string enumFmt(const std::string& s, const valpair_t& v,
                             enumStyle_t style, bool isLast) const override {
             return indent() + pre() + s + v.second + styleStr(style) + " = " + fmtStyleVal(v.first, style) + ",\n";
-        }
-
-        std::string maxEnumFmt(const std::string& s, const valpair_t& v,
-                               enumStyle_t style) const override {
-            return enumFmt(s, v, style, true);
         }
 
         std::string pre() const override { return "Spv"; } // C name prefix
@@ -676,11 +685,6 @@ IN THE MATERIALS.
             return indent() + s + v.second + styleStr(style) + " = " + fmtStyleVal(v.first, style) + ",\n";
         }
 
-        virtual std::string maxEnumFmt(const std::string& s, const valpair_t& v,
-                                       enumStyle_t style) const override {
-            return enumFmt(s, v, style, true);
-        }
-
         // The C++ and C++11 headers define types with the same name. So they
         // should use the same header guard.
         std::string headerGuardSuffix() const override { return "HPP"; }
@@ -705,13 +709,8 @@ IN THE MATERIALS.
             return indent() + prependIfDigit(s, v.second) + " = " + fmtStyleVal(v.first, style) + ",\n";
         }
 
-        std::string maxEnumFmt(const std::string& s, const valpair_t& v,
-                               enumStyle_t style) const override {
-            return enumFmt(s, v, style, true);
-        }
-
         // Add type prefix for scoped enum
-        virtual std::string fmtEnumUse(const std::string& opPrefix, const std::string& name) const override { return opPrefix + "::" + name; }
+        std::string fmtEnumUse(const std::string& opPrefix, const std::string& opEnum, const std::string& name) const override { return opEnum + "::" + prependIfDigit(opEnum, name); }
 
         std::string headerGuardSuffix() const override { return "HPP"; }
     };
@@ -766,7 +765,10 @@ IN THE MATERIALS.
                             enumStyle_t style, bool isLast) const override {
             return indent(2) + "'" + prependIfDigit(s, v.second) + "'" + " : " + fmtStyleVal(v.first, style) + ",\n";
         }
-
+        std::string maxEnumFmt(const std::string& s, const valpair_t& v,
+                               enumStyle_t style) const override {
+            return "";
+        }
         std::string fmtConstInt(unsigned val, const std::string& name,
                                 const char* fmt, bool isLast) const override
         {
