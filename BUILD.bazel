@@ -1,3 +1,5 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -133,6 +135,7 @@ cc_library(
         "include/spirv/unified1/GLSL.std.450.h",
         "include/spirv/unified1/NonSemanticClspvReflection.h",
         "include/spirv/unified1/NonSemanticDebugPrintf.h",
+        "include/spirv/unified1/NonSemanticShaderDebugInfo100.h",
         "include/spirv/unified1/NonSemanticVkspReflection.h",
         "include/spirv/unified1/OpenCL.std.h",
     ],
@@ -174,4 +177,3 @@ cc_library(
     includes = ["include"],
     deps = [":spirv_common_headers"],
 )
-
