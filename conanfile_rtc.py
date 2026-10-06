@@ -1,9 +1,9 @@
 from conans import ConanFile
 
 
-class SPIRVHeadersConan(ConanFile):
-    name = "SPIRV-Headers"
-    version = "0.0.1"
+class SpirvHeadersConan(ConanFile):
+    name = "spirv-headers"
+    version = "vulkan-sdk-1.4.363.0"
     url = "https://github.com/Esri/SPIRV-Headers/blob/runtimecore"
     license = "https://github.com/Esri/SPIRV-Headers/blob/runtimecore/LICENSE"
     description = "Machine-readable files for the SPIR-V Registry"
